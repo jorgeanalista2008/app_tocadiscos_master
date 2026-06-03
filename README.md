@@ -85,8 +85,8 @@ Puedes apoyarnos a través de las siguientes plataformas:
 ### 🪙 Direcciones de Criptomonedas:
 - **Bitcoin (BTC):** `1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa`
 - **Ethereum (ETH):** `0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe`
-- **USDT (TRC-20):** [`TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t`](https://s.binance.com/Cz390iJm)
+- **USDT (TRC-20):** [`USDT Binance`](https://s.binance.com/Cz390iJm)
 
 ---
 
-*Desarrollado con ❤️ por **JorgeAnalista** usando Flutter.*
+*Desarrollado con ❤️ por **Nexxos.pro | Ceo Jorge ** usando Flutter.*

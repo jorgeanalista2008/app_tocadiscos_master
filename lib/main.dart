@@ -12,6 +12,11 @@ import 'core/permission/permission_service.dart';
 // Features Imports
 import 'features/library/domain/entities/song_entity.dart';
 import 'features/library/presentation/providers/library_provider.dart';
+import 'features/library/presentation/providers/favorites_provider.dart';
+import 'features/library/presentation/providers/playlists_provider.dart';
+import 'features/library/presentation/providers/folders_provider.dart';
+import 'features/library/presentation/screens/folder_songs_screen.dart';
+import 'features/library/presentation/screens/playlist_detail_screen.dart';
 import 'features/player/data/services/audio_player_handler.dart';
 import 'features/player/presentation/providers/player_provider.dart';
 import 'features/player/presentation/providers/equalizer_provider.dart';
@@ -95,11 +100,20 @@ class MainLibraryScreen extends ConsumerStatefulWidget {
 class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
   bool _hasPermission = false;
   bool _isChecking = true;
+  int _currentTab = 0;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _checkPermissions();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   /// Comprueba los permisos de almacenamiento
@@ -112,7 +126,6 @@ class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
     });
 
     if (granted) {
-      // Disparar escaneo de canciones
       ref.read(librarySongsProvider.notifier).scanSongs();
     }
   }
@@ -180,13 +193,113 @@ class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
       ),
       body: Column(
         children: [
+          if (_currentTab == 0 || _currentTab == 3) _buildSearchBar(),
           Expanded(
-            child: _buildSongsList(),
+            child: _buildCurrentTabContent(),
           ),
           _buildMiniPlayer(),
         ],
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentTab,
+        onTap: (index) {
+          setState(() {
+            _currentTab = index;
+            _searchQuery = '';
+            _searchController.clear();
+          });
+        },
+        selectedItemColor: AppTheme.primaryColor,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.music_note_rounded),
+            label: 'Canciones',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.folder_rounded),
+            label: 'Carpetas',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.playlist_play_rounded),
+            label: 'Listas',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_rounded),
+            label: 'Favoritos',
+          ),
+        ],
+      ),
+      floatingActionButton: _currentTab == 2
+          ? FloatingActionButton(
+              onPressed: _showCreatePlaylistDialog,
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              child: const Icon(Icons.add_rounded),
+            )
+          : null,
     );
+  }
+
+  /// Barra de búsqueda para filtrar listas
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 4,
+            ),
+          ],
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (val) {
+            setState(() {
+              _searchQuery = val;
+            });
+          },
+          decoration: InputDecoration(
+            hintText: _currentTab == 0 ? 'Buscar canciones...' : 'Buscar en favoritos...',
+            prefixIcon: const Icon(Icons.search_rounded),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear_rounded),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = '';
+                      });
+                    },
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Retorna el contenido de la pestaña activa
+  Widget _buildCurrentTabContent() {
+    switch (_currentTab) {
+      case 0:
+        return _buildSongsList();
+      case 1:
+        return _buildFoldersList();
+      case 2:
+        return _buildPlaylistsList();
+      case 3:
+        return _buildFavoritesList();
+      default:
+        return _buildSongsList();
+    }
   }
 
   /// Pantalla cuando no se tienen permisos concedidos
@@ -244,10 +357,17 @@ class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
   /// Lista de canciones del almacén local
   Widget _buildSongsList() {
     final songsAsync = ref.watch(librarySongsProvider);
+    final favorites = ref.watch(favoritesProvider).value ?? [];
 
     return songsAsync.when(
       data: (songs) {
-        if (songs.isEmpty) {
+        final filteredSongs = songs.where((song) {
+          final query = _searchQuery.toLowerCase();
+          return song.title.toLowerCase().contains(query) ||
+              song.artist.toLowerCase().contains(query);
+        }).toList();
+
+        if (filteredSongs.isEmpty) {
           return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -266,10 +386,12 @@ class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
         return RefreshIndicator(
           onRefresh: () => ref.read(librarySongsProvider.notifier).scanSongs(),
           child: ListView.builder(
-            itemCount: songs.length,
+            itemCount: filteredSongs.length,
             padding: const EdgeInsets.symmetric(vertical: 8),
             itemBuilder: (context, index) {
-              final song = songs[index];
+              final song = filteredSongs[index];
+              final isFav = favorites.contains(song.path);
+
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 elevation: 0,
@@ -301,11 +423,25 @@ class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  trailing: Text(
-                    _formatDuration(song.duration),
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          color: isFav ? Colors.pink : Colors.grey,
+                        ),
+                        onPressed: () {
+                          ref.read(favoritesProvider.notifier).toggleFavorite(song.path!);
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.more_vert_rounded),
+                        onPressed: () => _showSongMenu(context, song),
+                      ),
+                    ],
                   ),
-                  onTap: () => _playSong(songs, index),
+                  onTap: () => _playSong(filteredSongs, index),
                 ),
               );
             },
@@ -316,6 +452,424 @@ class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
       error: (err, stack) => Center(
         child: Text('Error al escanear música: $err'),
       ),
+    );
+  }
+
+  /// Pestaña 2: Vista de Carpetas
+  Widget _buildFoldersList() {
+    final folders = ref.watch(foldersProvider);
+    if (folders.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.folder_off_rounded, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'No se encontraron carpetas con música.',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final folderPaths = folders.keys.toList();
+
+    return ListView.builder(
+      itemCount: folderPaths.length,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemBuilder: (context, index) {
+        final path = folderPaths[index];
+        final name = getFolderName(path);
+        final count = folders[path]?.length ?? 0;
+
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          elevation: 0,
+          child: ListTile(
+            leading: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.teal.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.folder_open_rounded,
+                color: Colors.teal,
+              ),
+            ),
+            title: Text(
+              name,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              path,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12),
+            ),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$count canciones',
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FolderSongsScreen(
+                    folderPath: path,
+                    folderName: name,
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  /// Pestaña 3: Listas de Reproducción
+  Widget _buildPlaylistsList() {
+    final playlistsAsync = ref.watch(playlistsProvider);
+
+    return playlistsAsync.when(
+      data: (playlists) {
+        if (playlists.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.playlist_add_rounded, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
+                  'No tienes listas de reproducción. ¡Crea una nueva!',
+                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: playlists.length,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemBuilder: (context, index) {
+            final playlist = playlists[index];
+            final count = playlist.songPaths.length;
+
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              elevation: 0,
+              child: ListTile(
+                leading: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.playlist_play_rounded,
+                    color: AppTheme.primaryColor,
+                    size: 30,
+                  ),
+                ),
+                title: Text(
+                  playlist.name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  '$count canciones',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                  onPressed: () => _confirmDeletePlaylist(context, playlist.id, playlist.name),
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PlaylistDetailScreen(
+                        playlistId: playlist.id,
+                        playlistName: playlist.name,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error al cargar listas: $err')),
+    );
+  }
+
+  /// Pestaña 4: Canciones Favoritas
+  Widget _buildFavoritesList() {
+    final favoritesAsync = ref.watch(favoritesProvider);
+    final allSongsAsync = ref.watch(librarySongsProvider);
+
+    return allSongsAsync.when(
+      data: (allSongs) {
+        return favoritesAsync.when(
+          data: (favoritesPaths) {
+            final favoriteSongs = allSongs.where((song) => favoritesPaths.contains(song.path)).toList();
+
+            final filteredFavs = favoriteSongs.where((song) {
+              final query = _searchQuery.toLowerCase();
+              return song.title.toLowerCase().contains(query) ||
+                  song.artist.toLowerCase().contains(query);
+            }).toList();
+
+            if (filteredFavs.isEmpty) {
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.favorite_border_rounded, size: 64, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text(
+                      'No hay canciones favoritas.',
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return ListView.builder(
+              itemCount: filteredFavs.length,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemBuilder: (context, index) {
+                final song = filteredFavs[index];
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  elevation: 0,
+                  child: ListTile(
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: QueryArtworkWidget(
+                        id: song.rawId,
+                        type: ArtworkType.AUDIO,
+                        nullArtworkWidget: Container(
+                          width: 50,
+                          height: 50,
+                          color: AppTheme.primaryColor.withOpacity(0.1),
+                          child: const Icon(
+                            Icons.music_note_rounded,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      song.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      song.artist,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.favorite_rounded,
+                            color: Colors.pink,
+                          ),
+                          onPressed: () {
+                            ref.read(favoritesProvider.notifier).toggleFavorite(song.path!);
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.more_vert_rounded),
+                          onPressed: () => _showSongMenu(context, song),
+                        ),
+                      ],
+                    ),
+                    onTap: () => _playSong(filteredFavs, index),
+                  ),
+                );
+              },
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, stack) => Center(child: Text('Error al cargar favoritos: $err')),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err')),
+    );
+  }
+
+  /// Diálogo para crear una nueva lista de reproducción
+  void _showCreatePlaylistDialog() {
+    final textController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Nueva Lista'),
+          content: TextField(
+            controller: textController,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'Nombre de la lista de reproducción...',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                final name = textController.text.trim();
+                if (name.isNotEmpty) {
+                  ref.read(playlistsProvider.notifier).createPlaylist(name);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Lista "$name" creada.')),
+                  );
+                }
+              },
+              child: const Text('Crear'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Diálogo para confirmar la eliminación de una lista
+  void _confirmDeletePlaylist(BuildContext context, String id, String name) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Eliminar Lista'),
+          content: Text('¿Estás seguro de que deseas eliminar la lista "$name"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                ref.read(playlistsProvider.notifier).deletePlaylist(id);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Lista "$name" eliminada.')),
+                );
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Muestra el menú contextual de una canción
+  void _showSongMenu(BuildContext context, SongEntity song) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, _) {
+            final playlists = ref.watch(playlistsProvider).value ?? [];
+
+            return Container(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.playlist_add_rounded, color: AppTheme.primaryColor),
+                    title: const Text('Agregar a Lista de Reproducción'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (playlists.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('No tienes listas de reproducción. Crea una primero.')),
+                        );
+                        return;
+                      }
+                      _showPlaylistSelector(context, song);
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Diálogo selector de listas para añadir una canción
+  void _showPlaylistSelector(BuildContext context, SongEntity song) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Seleccionar Lista'),
+          content: Consumer(
+            builder: (context, ref, _) {
+              final playlists = ref.watch(playlistsProvider).value ?? [];
+              return SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: playlists.length,
+                  itemBuilder: (context, index) {
+                    final playlist = playlists[index];
+                    return ListTile(
+                      leading: const Icon(Icons.playlist_play_rounded),
+                      title: Text(playlist.name),
+                      onTap: () {
+                        ref.read(playlistsProvider.notifier).addSongToPlaylist(playlist.id, song.path!);
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Agregado a ${playlist.name}')),
+                        );
+                      },
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -354,7 +908,6 @@ class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
           top: false,
           child: Row(
             children: [
-              // Carátula
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
                 child: const Icon(
@@ -364,7 +917,6 @@ class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              // Detalles de la canción
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,7 +937,6 @@ class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
                   ],
                 ),
               ),
-              // Controles
               IconButton(
                 icon: const Icon(Icons.skip_previous_rounded),
                 onPressed: handler.skipToPrevious,
@@ -428,13 +979,7 @@ class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
     await handler.play();
   }
 
-  /// Formatea la duración de milisegundos a mm:ss
-  String _formatDuration(int milliseconds) {
-    final duration = Duration(milliseconds: milliseconds);
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds % 60;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
-  }
+
 
   /// Abre la BottomSheet del Ecualizador
   void _openEqualizerBottomSheet(BuildContext context) {

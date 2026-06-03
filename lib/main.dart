@@ -26,7 +26,7 @@ void main() async {
     builder: () => AudioPlayerHandler(),
     config: const AudioServiceConfig(
       androidNotificationChannelId: 'com.tocadiscos.app.channel.audio',
-      androidNotificationChannelName: 'Tocadiscos Reproductor',
+      androidNotificationChannelName: 'Tocadiscos.pro Reproductor',
       androidNotificationOngoing: true,
       androidShowNotificationBadge: true,
     ),
@@ -74,7 +74,7 @@ class MyApp extends ConsumerWidget {
     }
 
     return MaterialApp(
-      title: 'Tocadiscos App',
+      title: 'Tocadiscos.pro',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: appThemeData,
@@ -151,7 +151,7 @@ class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tocadiscos'),
+        title: const Text('Tocadiscos.pro'),
         actions: [
           // Selector de Ecualizador
           IconButton(
@@ -581,7 +581,7 @@ extension ListTilePressed on ListTile {
   }
 }
 
-/// Pantalla de Carga Premium (Splash Screen) con vinilo giratorio
+/// Pantalla de Carga Premium (Splash Screen) con vinilo giratorio y logotipo de la marca
 class SplashLoader extends StatefulWidget {
   const SplashLoader({super.key});
 
@@ -591,6 +591,7 @@ class SplashLoader extends StatefulWidget {
 
 class _SplashLoaderState extends State<SplashLoader> with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
 
   @override
   void initState() {
@@ -598,7 +599,18 @@ class _SplashLoaderState extends State<SplashLoader> with SingleTickerProviderSt
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
-    )..repeat(); // Rota continuamente
+    );
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.06).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.06, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 50,
+      ),
+    ]).animate(_controller);
+    _controller.repeat();
   }
 
   @override
@@ -610,64 +622,73 @@ class _SplashLoaderState extends State<SplashLoader> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF33C2D2), // Fondo Turquesa de la imagen
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Disco de vinilo que gira en bucle
-            RotationTransition(
-              turns: _controller,
+            // Logo del tocadiscos con animación de pulso
+            ScaleTransition(
+              scale: _scaleAnimation,
               child: Container(
-                width: 140,
-                height: 140,
+                width: 220,
+                height: 220,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF111111),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppTheme.primaryColor, width: 3),
+                  borderRadius: BorderRadius.circular(32),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.primaryColor.withOpacity(0.3),
-                      blurRadius: 40,
-                      spreadRadius: 10,
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
-                child: const Center(
-                  child: Icon(
-                    Icons.album_rounded,
-                    size: 90,
-                    color: AppTheme.primaryColor,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(32),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
             ),
             const SizedBox(height: 48),
+            // Marca de la app solicitada
             const Text(
-              'TOCADISCOS',
+              'TocaNexxos.pro',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 28,
+                fontSize: 32,
                 fontWeight: FontWeight.bold,
-                letterSpacing: 4,
+                letterSpacing: 2,
                 fontFamily: 'Outfit',
+                shadows: [
+                  Shadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 3),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             const Text(
-              'Sintonizando biblioteca local...',
+              'Tocadiscos.pro',
               style: TextStyle(
-                color: Colors.grey,
-                fontSize: 14,
+                color: Colors.white70,
+                fontSize: 16,
+                letterSpacing: 1,
                 fontStyle: FontStyle.italic,
               ),
             ),
             const SizedBox(height: 48),
+            // Cargador blanco minimalista
             const SizedBox(
               width: 160,
               child: LinearProgressIndicator(
-                backgroundColor: Color(0xFF222222),
-                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                backgroundColor: Colors.white24,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             ),
           ],

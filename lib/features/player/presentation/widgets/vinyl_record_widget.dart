@@ -147,7 +147,7 @@ class _VinylRecordWidgetState extends State<VinylRecordWidget> with SingleTicker
             ),
             const SizedBox(height: 2),
             Text(
-              'TOCADISCOS',
+              'TocaNexxos.pro',
               style: TextStyle(
                 color: Colors.white.withOpacity(0.9),
                 fontSize: 6,

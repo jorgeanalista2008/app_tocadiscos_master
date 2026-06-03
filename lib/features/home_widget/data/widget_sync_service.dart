@@ -27,7 +27,7 @@ class WidgetSyncService {
         await HomeWidget.saveWidgetData<String>('song_artist', currentSong.artist);
         await HomeWidget.saveWidgetData<String>('song_album', currentSong.album ?? '');
       } else {
-        await HomeWidget.saveWidgetData<String>('song_title', 'Tocadiscos');
+        await HomeWidget.saveWidgetData<String>('song_title', 'Tocadiscos.pro');
         await HomeWidget.saveWidgetData<String>('song_artist', 'Sin reproducción');
         await HomeWidget.saveWidgetData<String>('song_album', '');
       }

@@ -79,14 +79,13 @@ Puedes apoyarnos a través de las siguientes plataformas:
 
 | Método de Donación | Enlace directo |
 | :--- | :--- |
-| **PayPal** | [paypal.me/JMSOLUTIONS8825](https://paypal.me/JMSOLUTIONS8825) |
-| **Kofi** | [ko-fi.com/tocadexxos](https://ko-fi.com) |
-| **Patreon** | [patreon.com/tocaNexxos](https://patreon.com) |
+| **Kofi** | [ko-fi.com/nexxospro](https://ko-fi.com/nexxospro) |
+| **Patreon** | [patreon.com/nexxospro](https://www.patreon.com/cw/jorge_flores) |
 
 ### 🪙 Direcciones de Criptomonedas:
 - **Bitcoin (BTC):** `1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa`
 - **Ethereum (ETH):** `0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe`
-- **USDT (TRC-20):** `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t`
+- **USDT (TRC-20):** [`TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t`](https://s.binance.com/Cz390iJm)
 
 ---
 

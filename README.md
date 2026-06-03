@@ -83,8 +83,6 @@ Puedes apoyarnos a través de las siguientes plataformas:
 | **Patreon** | [patreon.com/nexxospro](https://www.patreon.com/cw/jorge_flores) |
 
 ### 🪙 Direcciones de Criptomonedas:
-- **Bitcoin (BTC):** `1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa`
-- **Ethereum (ETH):** `0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe`
 - **USDT (TRC-20):** [`USDT Binance`](https://s.binance.com/Cz390iJm)
 
 ---

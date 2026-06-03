@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audio_service/audio_service.dart';
@@ -17,6 +16,7 @@ import 'features/player/data/services/audio_player_handler.dart';
 import 'features/player/presentation/providers/player_provider.dart';
 import 'features/player/presentation/providers/equalizer_provider.dart';
 import 'features/home_widget/presentation/providers/widget_sync_provider.dart';
+import 'features/player/presentation/screens/player_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -142,11 +142,7 @@ class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isChecking) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const SplashLoader();
     }
 
     if (!_hasPermission) {
@@ -195,7 +191,6 @@ class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
 
   /// Pantalla cuando no se tienen permisos concedidos
   Widget _buildPermissionRequestScreen() {
-    final isAmoled = ref.watch(themeProvider) == AppThemeMode.amoled;
     return Scaffold(
       body: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -339,67 +334,76 @@ class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
     final isPlaying = playerState?.playing ?? false;
     final handler = ref.read(audioHandlerProvider);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: const Border(
-          top: BorderSide(color: Color(0xFF222222), width: 0.5),
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const PlayerScreen(),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: const Border(
+            top: BorderSide(color: Color(0xFF222222), width: 0.5),
+          ),
         ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            // Carátula
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: const Icon(
-                Icons.album_rounded,
-                size: 40,
-                color: AppTheme.primaryColor,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: SafeArea(
+          top: false,
+          child: Row(
+            children: [
+              // Carátula
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: const Icon(
+                  Icons.album_rounded,
+                  size: 40,
+                  color: AppTheme.primaryColor,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            // Detalles de la canción
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    currentItem.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    currentItem.artist ?? 'Artista Desconocido',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
+              const SizedBox(width: 12),
+              // Detalles de la canción
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      currentItem.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      currentItem.artist ?? 'Artista Desconocido',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            // Controles
-            IconButton(
-              icon: const Icon(Icons.skip_previous_rounded),
-              onPressed: handler.skipToPrevious,
-            ),
-            IconButton(
-              icon: Icon(
-                isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
-                size: 36,
-                color: AppTheme.primaryColor,
+              // Controles
+              IconButton(
+                icon: const Icon(Icons.skip_previous_rounded),
+                onPressed: handler.skipToPrevious,
               ),
-              onPressed: isPlaying ? handler.pause : handler.play,
-            ),
-            IconButton(
-              icon: const Icon(Icons.skip_next_rounded),
-              onPressed: handler.skipToNext,
-            ),
-          ],
+              IconButton(
+                icon: Icon(
+                  isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
+                  size: 36,
+                  color: AppTheme.primaryColor,
+                ),
+                onPressed: isPlaying ? handler.pause : handler.play,
+              ),
+              IconButton(
+                icon: const Icon(Icons.skip_next_rounded),
+                onPressed: handler.skipToNext,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -488,7 +492,7 @@ class EqualizerBottomSheet extends ConsumerWidget {
                 labelText: 'Ajuste Predefinido',
                 border: OutlineInputBorder(),
               ),
-              items: ['Normal', 'Rock', 'Heavy Metal', 'Pop', 'Clásica', 'Flat', 'Bass Boost']
+              items: ['Normal', 'Rock', 'Heavy Metal', 'Pop', 'Clásica', 'Flat', 'Bass Boost', 'Personalizado']
                   .map((preset) => DropdownMenuItem(
                         value: preset,
                         child: Text(preset),
@@ -573,6 +577,102 @@ extension ListTilePressed on ListTile {
     return InkWell(
       onTap: callback,
       child: this,
+    );
+  }
+}
+
+/// Pantalla de Carga Premium (Splash Screen) con vinilo giratorio
+class SplashLoader extends StatefulWidget {
+  const SplashLoader({super.key});
+
+  @override
+  State<SplashLoader> createState() => _SplashLoaderState();
+}
+
+class _SplashLoaderState extends State<SplashLoader> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(); // Rota continuamente
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Disco de vinilo que gira en bucle
+            RotationTransition(
+              turns: _controller,
+              child: Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF111111),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppTheme.primaryColor, width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withOpacity(0.3),
+                      blurRadius: 40,
+                      spreadRadius: 10,
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.album_rounded,
+                    size: 90,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 48),
+            const Text(
+              'TOCADISCOS',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 4,
+                fontFamily: 'Outfit',
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Sintonizando biblioteca local...',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 48),
+            const SizedBox(
+              width: 160,
+              child: LinearProgressIndicator(
+                backgroundColor: Color(0xFF222222),
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

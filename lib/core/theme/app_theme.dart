@@ -1,4 +1,4 @@
-import 'package:flutter/material';
+import 'package:flutter/material.dart';
 
 enum AppThemeMode { light, dark, amoled }
 
@@ -14,11 +14,9 @@ class AppTheme {
       colorScheme: const ColorScheme.light(
         primary: primaryColor,
         secondary: accentColor,
-        background: Color(0xFFF9F9FB),
         surface: Colors.white,
         onPrimary: Colors.white,
         onSecondary: Colors.black,
-        onBackground: Color(0xFF1E1E24),
         onSurface: Color(0xFF1E1E24),
       ),
       scaffoldBackgroundColor: const Color(0xFFF9F9FB),
@@ -34,7 +32,7 @@ class AppTheme {
           fontFamily: 'Outfit',
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -54,11 +52,9 @@ class AppTheme {
       colorScheme: const ColorScheme.dark(
         primary: primaryColor,
         secondary: accentColor,
-        background: Color(0xFF121212),
         surface: Color(0xFF1E1E1E),
         onPrimary: Colors.white,
         onSecondary: Colors.black,
-        onBackground: Color(0xFFE3E3E6),
         onSurface: Color(0xFFE3E3E6),
       ),
       scaffoldBackgroundColor: const Color(0xFF121212),
@@ -74,7 +70,7 @@ class AppTheme {
           fontFamily: 'Outfit',
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: const Color(0xFF1E1E1E),
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -94,11 +90,9 @@ class AppTheme {
       colorScheme: const ColorScheme.dark(
         primary: primaryColor,
         secondary: accentColor,
-        background: Colors.black,
         surface: Color(0xFF101010),
         onPrimary: Colors.white,
         onSecondary: Colors.black,
-        onBackground: Colors.white,
         onSurface: Colors.white,
       ),
       scaffoldBackgroundColor: Colors.black,
@@ -114,7 +108,7 @@ class AppTheme {
           fontFamily: 'Outfit',
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: const Color(0xFF101010),
         elevation: 0,
         shape: RoundedRectangleBorder(

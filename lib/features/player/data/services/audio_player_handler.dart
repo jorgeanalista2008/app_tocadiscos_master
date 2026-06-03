@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:rxdart/rxdart.dart';
 
 /// Implementación personalizada de [BaseAudioHandler] utilizando la librería `just_audio`.
 /// Se encarga de gestionar la reproducción, la cola de canciones y la ecualización en segundo plano.
@@ -18,11 +17,11 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     if (Platform.isAndroid && _equalizer != null) {
       _player = AudioPlayer(
         audioPipeline: AudioPipeline(
-          androidAudioEffects: [_equalizer!],
+          androidAudioEffects: [_equalizer],
         ),
       );
       // Habilitar el ecualizador por defecto
-      _equalizer!.setEnabled(true);
+      _equalizer.setEnabled(true);
     } else {
       _player = AudioPlayer();
     }
@@ -176,7 +175,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   /// Obtiene los parámetros de ganancia mínima y máxima soportada (en dB).
   Future<Map<String, double>> getEqualizerGainRange() async {
     if (_equalizer == null) return {'min': -15.0, 'max': 15.0};
-    final params = await _equalizer!.parameters;
+    final params = await _equalizer.parameters;
     return {
       'min': params.minDecibels,
       'max': params.maxDecibels,
@@ -186,21 +185,21 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   /// Obtiene la lista de frecuencias centrales de las bandas disponibles.
   Future<List<double>> getEqualizerFrequencies() async {
     if (_equalizer == null) return [];
-    final params = await _equalizer!.parameters;
+    final params = await _equalizer.parameters;
     return params.bands.map((band) => band.centerFrequency).toList();
   }
 
   /// Obtiene los valores de ganancia actuales para cada banda.
   Future<List<double>> getEqualizerGains() async {
     if (_equalizer == null) return [];
-    final params = await _equalizer!.parameters;
+    final params = await _equalizer.parameters;
     return params.bands.map((band) => band.gain).toList();
   }
 
   /// Establece la ganancia de una banda específica.
   Future<void> setEqualizerBandGain(int bandIndex, double gain) async {
     if (_equalizer == null) return;
-    final params = await _equalizer!.parameters;
+    final params = await _equalizer.parameters;
     if (bandIndex >= 0 && bandIndex < params.bands.length) {
       await params.bands[bandIndex].setGain(gain);
     }
@@ -209,6 +208,6 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   /// Activa o desactiva el ecualizador nativo.
   Future<void> setEqualizerEnabled(bool enabled) async {
     if (_equalizer == null) return;
-    await _equalizer!.setEnabled(enabled);
+    await _equalizer.setEnabled(enabled);
   }
 }

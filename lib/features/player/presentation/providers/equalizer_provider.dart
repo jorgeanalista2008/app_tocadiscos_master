@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/di/providers.dart';
+import '../../../../core/di/providers.dart';
 
 /// Clase que encapsula el estado del ecualizador
 class EqualizerState {

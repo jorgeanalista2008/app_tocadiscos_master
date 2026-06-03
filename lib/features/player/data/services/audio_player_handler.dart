@@ -45,17 +45,6 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       }
     });
 
-    // Combinar la duración de la canción y la posición actual del reproductor
-    // para notificar a la barra de progreso.
-    Rx.combineLatest3<Duration, Duration, int?, MediaItem?>(
-      _player.positionStream,
-      _player.bufferedPositionStream,
-      _player.currentIndexStream,
-      mediaItem.stream,
-      (position, buffered, index, currentItem) => currentItem,
-    ).listen((item) {
-      // Opcional: Procesamientos adicionales en cada tick de reproducción
-    });
   }
 
   /// Mapea los estados de `just_audio` a los requeridos por `audio_service`
@@ -74,7 +63,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
         MediaAction.setShuffleMode,
         MediaAction.setRepeatMode,
       },
-      androidCompactIndices: const [0, 1, 3],
+      androidCompactActionIndices: const [0, 1, 3],
       processingState: const {
         ProcessingState.idle: AudioProcessingState.idle,
         ProcessingState.loading: AudioProcessingState.loading,
@@ -187,43 +176,33 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   /// Obtiene los parámetros de ganancia mínima y máxima soportada (en dB).
   Future<Map<String, double>> getEqualizerGainRange() async {
     if (_equalizer == null) return {'min': -15.0, 'max': 15.0};
-    final bands = await _equalizer!.bands;
-    if (bands.isEmpty) return {'min': -15.0, 'max': 15.0};
-    final range = await bands.first.gainRange;
+    final params = await _equalizer!.parameters;
     return {
-      'min': range.minDecibels,
-      'max': range.maxDecibels,
+      'min': params.minDecibels,
+      'max': params.maxDecibels,
     };
   }
 
   /// Obtiene la lista de frecuencias centrales de las bandas disponibles.
   Future<List<double>> getEqualizerFrequencies() async {
     if (_equalizer == null) return [];
-    final bands = await _equalizer!.bands;
-    final freqs = <double>[];
-    for (var band in bands) {
-      freqs.add(await band.centerFrequency);
-    }
-    return freqs;
+    final params = await _equalizer!.parameters;
+    return params.bands.map((band) => band.centerFrequency).toList();
   }
 
   /// Obtiene los valores de ganancia actuales para cada banda.
   Future<List<double>> getEqualizerGains() async {
     if (_equalizer == null) return [];
-    final bands = await _equalizer!.bands;
-    final gains = <double>[];
-    for (var band in bands) {
-      gains.add(await band.gain);
-    }
-    return gains;
+    final params = await _equalizer!.parameters;
+    return params.bands.map((band) => band.gain).toList();
   }
 
   /// Establece la ganancia de una banda específica.
   Future<void> setEqualizerBandGain(int bandIndex, double gain) async {
     if (_equalizer == null) return;
-    final bands = await _equalizer!.bands;
-    if (bandIndex >= 0 && bandIndex < bands.length) {
-      await bands[bandIndex].setGain(gain);
+    final params = await _equalizer!.parameters;
+    if (bandIndex >= 0 && bandIndex < params.bands.length) {
+      await params.bands[bandIndex].setGain(gain);
     }
   }
 

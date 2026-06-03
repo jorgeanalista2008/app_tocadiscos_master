@@ -374,7 +374,7 @@ class _MainLibraryScreenState extends ConsumerState<MainLibraryScreen> {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    currentItem.artist,
+                    currentItem.artist ?? 'Artista Desconocido',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 12, color: Colors.grey),
